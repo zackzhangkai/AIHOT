@@ -4,6 +4,7 @@
 import { addDays, beijingDate, beijingMidnight } from "@aihot/contracts/time";
 import type { CodexCalendarMark, CodexResetMonitor, CodexResetPageData, CodexResetsSnapshot } from "@aihot/contracts/monitor";
 import { sql } from "../db.ts";
+import { remoteSnapshot, remoteVersion } from "./remote.ts";
 import { sha256, stableJson } from "../lib/ids.ts";
 import { proxiedImage } from "../media/imgproxy.ts";
 import { siteUrl } from "../publication/links.ts";
@@ -220,6 +221,12 @@ export async function codexResetsRecent(now = Date.now()): Promise<CodexResetsSn
 /** The complete public snapshot served at GET /api/v1/codex-resets. */
 export async function codexResetsSnapshot(now = Date.now()): Promise<CodexResetsSnapshot> {
   const { events, links, posts, state, counts } = await loadAll();
+  // Local pipeline empty (e.g. SocialData key not configured): mirror the public radar snapshot
+  // from whenreset.uk so the page and v1 still carry real events. Silent on failure.
+  if (events.length === 0) {
+    const remote = await remoteSnapshot(now);
+    if (remote) return remote;
+  }
   const eventJsons = events.map((e) => eventJson(e, links, posts, now));
   const activities = [...posts.values()]
     .filter((p) => p.activity)
@@ -327,6 +334,10 @@ export async function codexResetVersion(now = Date.now()) {
       AND published_at >= ${new Date(now - OUTAGE_VISIBLE_MS)} ORDER BY published_at DESC, id COLLATE "C" ASC LIMIT 1`,
     sql<{ verified: string | null }[]>`SELECT value->>'lastVerifiedAt' AS verified FROM monitor_state WHERE key = 'watermarks'`,
   ]);
+  if (events.length === 0) {
+    const remote = await remoteVersion(now);
+    if (remote) return remote;
+  }
   return {
     version: versionHash(events.map((e) => [e.id, bjIso(e.updated_at), e.presentation ? presentationStatus(e, now) : undefined]), outage?.id ?? null),
     checkedAt: bjIso(state?.verified),
