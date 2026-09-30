@@ -18,9 +18,6 @@ function limited(key: string, max = 5): boolean {
 const page = (title: string, detail: string, token?: string) => `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta name="robots" content="noindex"><title>${title}</title></head><body style="font-family:system-ui,-apple-system,sans-serif;max-width:620px;margin:64px auto;padding:0 20px;line-height:1.7;color:#202a30"><h1>${title}</h1><p>${detail}</p>${token ? `<form method="post" enctype="text/plain"><button style="border:0;border-radius:999px;background:#176b75;color:white;padding:11px 20px;font-size:15px">确认退订</button></form>` : ""}<p><a href="${config.siteUrl}">返回 ${SITE.name}</a></p></body></html>`;
 
 export function registerNewsletter(app: FastifyInstance) {
-  if (!app.hasContentTypeParser("application/x-www-form-urlencoded")) {
-    app.addContentTypeParser("application/x-www-form-urlencoded", { parseAs: "string" }, (_req, body, done) => done(null, body));
-  }
   app.get("/api/site/newsletter/status", async (_req, reply) => reply.header("Cache-Control", "no-store").send({ configured: newsletterConfigured() }));
 
   app.post("/api/site/newsletter/subscribe", async (req, reply) => {
