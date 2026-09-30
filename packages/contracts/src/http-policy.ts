@@ -58,6 +58,16 @@ export const REDIRECTS: RedirectRule[] = [
   { match: "regex", path: "^/leaderboard/category/(aesthetics|writing)$", status: 307, location: "/leaderboard", why: "data-layer categories not yet public" },
   { match: "exact", path: "/leaderboard/category/overall", status: 404, why: "the overall board lives at /leaderboard" },
   { match: "prefix", path: "/sources", status: 302, location: "/admin/sources*", why: "admin bookmarks" },
+  {
+    // Last: the generic form of the same idea. Every path answers on exactly one address — without a
+    // trailing slash — so `/hot/` and `/hot` never split signals. 308 keeps the method on POST too.
+    match: "regex",
+    path: "^(/(?!/).+[^/:])/+$",
+    status: 308,
+    location: "$1",
+    keepQuery: true,
+    why: "one canonical address per path: strip trailing slashes",
+  },
 ];
 
 export interface RedirectDecision {
