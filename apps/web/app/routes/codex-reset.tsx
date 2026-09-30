@@ -74,7 +74,9 @@ function scopeText(e: CodexResetEvent) {
 function Hero({ d, now }: { d: CodexResetSitePage; now: number }) {
   const e = d.current;
   const entrance = useEntrance();
-  const shell = "cr-wash grid items-center gap-5 rounded-sheet border border-line-strong p-4 sm:p-6 lg:grid-cols-2 lg:gap-8 lg:p-8";
+  // Stacked like a status strip: announcement summary on top, the full post below across the
+  // whole card (clamped), so neither column sits half-empty on wide screens.
+  const shell = "cr-wash rounded-sheet border border-line-strong p-4 sm:p-6 lg:p-8";
   if (!e) {
     const last = d.lastLanded;
     return (
@@ -96,10 +98,11 @@ function Hero({ d, now }: { d: CodexResetSitePage; now: number }) {
           )}
         </div>
         {last?.posts[0] && (
-          <div className="min-w-0">
+          <div className="mt-5 border-t border-line pt-5">
             <PostCard
               avatar={d.authorAvatar}
               stage={`${last.posts[0].stage}原帖`}
+              clampLines={8}
               post={{ id: last.posts[0].id, publishedAt: last.posts[0].publishedAt, translation: last.posts[0].fullText ?? last.posts[0].text, original: last.posts[0].fullOriginalText ?? last.posts[0].originalText, context: last.posts[0].context, url: last.posts[0].url }}
             />
           </div>
@@ -143,7 +146,7 @@ function Hero({ d, now }: { d: CodexResetSitePage; now: number }) {
             {e.estimate?.reason}
           </p>
         )}
-        <ul className="mt-4 grid gap-2 border-t border-line pt-4 text-[13px] leading-[1.75] text-ink-3">
+        <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-1.5 text-[13px] leading-[1.75] text-ink-3">
           <li>适用范围：{scopeText(e)}</li>
           {outage?.publishedAt && (
             <li>
@@ -151,15 +154,16 @@ function Hero({ d, now }: { d: CodexResetSitePage; now: number }) {
             </li>
           )}
         </ul>
-        <p className="mt-4 text-[13px] leading-[1.75] text-ink-3">
+        <p className="mt-2 text-[13px] leading-[1.75] text-ink-3">
           {credit ? "重置卡到账后由你自己决定何时使用。卡片余额以 Codex 内显示为准。" : "剩余额度可以放心用，生效后会恢复满额。以你 Codex 里显示的用量为准。"}
         </p>
       </div>
       {post && (
-        <div className="min-w-0">
+        <div className="mt-5 border-t border-line pt-5">
           <PostCard
             avatar={d.authorAvatar}
             stage={`${post.stage}原帖`}
+            clampLines={12}
             post={{ id: post.id, publishedAt: post.publishedAt, translation: post.fullText ?? post.text, original: post.fullOriginalText ?? post.originalText, context: post.context, url: post.url }}
           />
         </div>
