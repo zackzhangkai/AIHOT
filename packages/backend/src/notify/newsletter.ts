@@ -22,7 +22,9 @@ export class NewsletterRejected extends Error {
 }
 
 export function newsletterConfigured(): boolean {
-  return Boolean(credential("integrations", "RESEND_API_KEY") && credential("integrations", "MAIL_FROM"));
+  const direct = credential("integrations", "RESEND_API_KEY");
+  const relay = credential("integrations", "MAIL_RELAY_URL") && credential("integrations", "MAIL_RELAY_TOKEN");
+  return Boolean(credential("integrations", "MAIL_FROM") && (direct || relay));
 }
 
 const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]!);
@@ -61,16 +63,23 @@ export function emailPayload(message: EmailMessage) {
 
 export async function sendEmail(message: EmailMessage, fetchImpl: typeof fetch = fetch): Promise<string> {
   const key = credential("integrations", "RESEND_API_KEY");
-  if (!key || !credential("integrations", "MAIL_FROM")) throw new NewsletterRejected(503, "not_configured", "邮件提醒正在配置中，请稍后再试。");
-  const response = await fetchImpl("https://api.resend.com/emails", {
+  const relayUrl = credential("integrations", "MAIL_RELAY_URL");
+  const relayToken = credential("integrations", "MAIL_RELAY_TOKEN");
+  if (!newsletterConfigured()) throw new NewsletterRejected(503, "not_configured", "邮件提醒正在配置中，请稍后再试。");
+  const payload = emailPayload(message);
+  const response = await fetchImpl(key ? "https://api.resend.com/emails" : relayUrl!, {
     method: "POST",
-    headers: { authorization: `Bearer ${key}`, "content-type": "application/json", "idempotency-key": message.idempotencyKey },
-    body: JSON.stringify(emailPayload(message)),
+    headers: {
+      authorization: `Bearer ${key ?? relayToken}`,
+      "content-type": "application/json",
+      ...(key ? { "idempotency-key": message.idempotencyKey } : {}),
+    },
+    body: JSON.stringify(key ? payload : { ...payload, to: message.to, idempotencyKey: message.idempotencyKey }),
     signal: AbortSignal.timeout(15_000),
   });
-  if (!response.ok) throw new Error(`Resend rejected email (${response.status})`);
+  if (!response.ok) throw new Error(`Mail transport rejected email (${response.status})`);
   const body = (await response.json()) as { id?: string };
-  if (!body.id) throw new Error("Resend returned no email id");
+  if (!body.id) throw new Error("Mail transport returned no email id");
   return body.id;
 }
 
