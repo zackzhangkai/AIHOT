@@ -4,7 +4,7 @@ import type { Route } from "./+types/home";
 import type { TimelineResponse } from "@aihot/contracts/site";
 import { isCategoryKey, isChannelKey } from "@aihot/contracts/taxonomy";
 import { loadOr404, queryString, releaseBoundCache } from "../lib/api.server";
-import { listPath, organizationLd, pageMeta } from "../lib/seo";
+import { listPath, organizationLd, pageMeta, websiteLd } from "../lib/seo";
 import { Wordmark } from "../components/Logo";
 import { Timeline } from "../features/feed/Timeline";
 import { HotTopics } from "../features/feed/HotTopics";
@@ -29,7 +29,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 export function meta({ loaderData }: Route.MetaArgs) {
   const f = loaderData?.filters;
   const path = listPath("/", { channel: f && f.channel !== "all" ? f.channel : null, category: f?.category, tag: f?.tag });
-  return pageMeta({ path, jsonLd: path === "/" ? organizationLd() : undefined });
+  return pageMeta({ path, jsonLd: path === "/" ? [organizationLd(), websiteLd()] : undefined });
 }
 
 export function headers({ loaderHeaders }: Route.HeadersArgs) {

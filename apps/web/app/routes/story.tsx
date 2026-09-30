@@ -4,7 +4,7 @@ import { Link, redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/story";
 import type { StoryDetail, StoryReportView } from "@aihot/contracts/site";
 import { data as routeData } from "react-router";
-import { breadcrumbLd, pageMeta, titled } from "../lib/seo";
+import { breadcrumbLd, newsArticleLd, pageMeta, titled } from "../lib/seo";
 import { beijingDate, beijingTime, monthDayTime, relativeTime, shortSourceName } from "../lib/format";
 import { HeatChart } from "../features/story/HeatChart";
 import { Badge, SelectedBadge } from "../components/ui/Badge";
@@ -32,7 +32,17 @@ export function meta({ loaderData }: Route.MetaArgs) {
     path: `/story/${s.publicId}`,
     image: `/og/stories/${s.publicId}.png`,
     type: "article",
-    jsonLd: breadcrumbLd([{ name: SITE.name, path: "/" }, { name: "热点榜", path: "/hot" }, { name: s.title, path: `/story/${s.publicId}` }]),
+    jsonLd: [
+      newsArticleLd({
+        title: s.title,
+        path: `/story/${s.publicId}`,
+        description: s.digest ?? s.summary,
+        image: `/og/stories/${s.publicId}.png`,
+        datePublished: s.firstReportAt,
+        dateModified: s.latestAt ?? s.digestUpdatedAt,
+      }),
+      breadcrumbLd([{ name: SITE.name, path: "/" }, { name: "热点榜", path: "/hot" }, { name: s.title, path: `/story/${s.publicId}` }]),
+    ],
   });
 }
 

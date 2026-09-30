@@ -4,7 +4,7 @@ import { Link, useLoaderData, useNavigate } from "react-router";
 import type { Route } from "./+types/item";
 import type { SiteItemDetail } from "@aihot/contracts/site";
 import { loadOr404 } from "../lib/api.server";
-import { breadcrumbLd, pageMeta, siteUrl, titled } from "../lib/seo";
+import { breadcrumbLd, newsArticleLd, pageMeta, siteUrl, titled } from "../lib/seo";
 import { fullDateTime, relativeTime } from "../lib/format";
 import { markRead } from "../lib/local-state";
 import { SelectedBadge } from "../components/ui/Badge";
@@ -36,11 +36,21 @@ export function meta({ loaderData }: Route.MetaArgs) {
     image: `/og/items/${item.id}.png`,
     type: "article",
     noindex: !item.indexable,
-    jsonLd: breadcrumbLd([
-      { name: SITE.name, path: "/" },
-      { name: item.selected ? "精选" : "全部动态", path: item.selected ? "/" : "/all" },
-      { name: item.title, path: `/items/${item.id}` },
-    ]),
+    jsonLd: [
+      newsArticleLd({
+        title: item.title,
+        path: `/items/${item.id}`,
+        description: item.summary,
+        image: `/og/items/${item.id}.png`,
+        datePublished: item.publishedAt,
+        dateModified: item.timelineAt ?? item.publishedAt,
+      }),
+      breadcrumbLd([
+        { name: SITE.name, path: "/" },
+        { name: item.selected ? "精选" : "全部动态", path: item.selected ? "/" : "/all" },
+        { name: item.title, path: `/items/${item.id}` },
+      ]),
+    ],
   });
 }
 

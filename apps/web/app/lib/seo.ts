@@ -95,3 +95,50 @@ export function breadcrumbLd(items: Array<{ name: string; path: string }>) {
     itemListElement: items.map((it, i) => ({ "@type": "ListItem", position: i + 1, name: it.name, item: `${base}${it.path}` })),
   };
 }
+
+/**
+ * A news article: item detail pages, story (event) pages and report issues. The site publishes news, so
+ * NewsArticle fits better than Article; the publisher doubles as the author (editorial selections).
+ */
+export function newsArticleLd(input: {
+  title: string;
+  path: string;
+  description?: string | null;
+  image?: string | null;
+  datePublished?: string | null;
+  dateModified?: string | null;
+}) {
+  const base = siteUrl();
+  const org = { "@type": "Organization", name: SITE.organization.name, url: base, logo: `${base}/icon.png` };
+  const image = input.image ? (input.image.startsWith("http") ? input.image : `${base}${input.image}`) : null;
+  return {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: input.title.slice(0, 110),
+    ...(input.description ? { description: input.description.slice(0, 300) } : {}),
+    ...(image ? { image: [image] } : {}),
+    ...(input.datePublished ? { datePublished: input.datePublished } : {}),
+    ...(input.dateModified ? { dateModified: input.dateModified } : {}),
+    author: org,
+    publisher: org,
+    mainEntityOfPage: { "@type": "WebPage", "@id": `${base}${input.path}` },
+    inLanguage: SITE.locale,
+  };
+}
+
+/** The site as a whole, with its search entry point. Pairs with organizationLd on the home page. */
+export function websiteLd() {
+  const base = siteUrl();
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE.name,
+    url: base,
+    inLanguage: SITE.locale,
+    potentialAction: {
+      "@type": "SearchAction",
+      target: { "@type": "EntryPoint", urlTemplate: `${base}/all?q={search_term_string}` },
+      "query-input": "required name=search_term_string",
+    },
+  };
+}
