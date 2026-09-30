@@ -25,6 +25,7 @@ import { backupConfigured, runBackup } from "@aihot/backend/operations/backup";
 import { sourceHealthWeekly } from "@aihot/backend/operations/reports";
 import { markStalePendingReceipts } from "@aihot/backend/providers/receipts";
 import { markStaleDeliveries } from "@aihot/backend/notify/deliver";
+import { deliverDaily } from "@aihot/backend/notify/newsletter";
 
 interface Scheduled {
   name: string;
@@ -44,6 +45,8 @@ export const SCHEDULES: Scheduled[] = [
   { name: "stories.status", cron: "7 * * * *", run: refreshStoryStatuses },
   { name: "stories.links", cron: "12 * * * *", run: linkRelatedStories },
   { name: "reports.daily", cron: "0 8 * * *", missed: "once", run: () => composeDaily(beijingDate(Date.now())) },
+  // The report composer can take a few minutes. Repeated morning attempts are safe: both channels dedupe.
+  { name: "notify.daily", cron: "15,45 8-11 * * *", run: () => deliverDaily() },
   { name: "reports.weekly", cron: "0 10 * * 1", missed: "once", run: () => composeWeekly(isoWeekLabel(addDays(beijingDate(Date.now()), -7))) },
   {
     name: "reports.monthly",

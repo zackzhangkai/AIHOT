@@ -17,6 +17,7 @@ import { loadSiteStats } from "@aihot/backend/site/stats";
 import { itemAvailability } from "@aihot/backend/publication/availability";
 import { listTopicSummaries, loadTopicPage } from "@aihot/backend/publication/topics";
 import { registerFeedback } from "./feedback.ts";
+import { registerNewsletter } from "./newsletter.ts";
 
 import { loadHot, loadStoryDetail, resolveStory } from "@aihot/backend/publication/stories";
 import { listReports, loadReport, reportNavigation, loadReportNavigation, loadReportMonth, type ReportKind } from "@aihot/backend/publication/reports";
@@ -187,6 +188,7 @@ export function registerSite(app: FastifyInstance) {
   }));
 
   registerFeedback(app);
+  registerNewsletter(app);
 
 
   app.get("/api/site/hot", siteHandler(async (req, reply) => {

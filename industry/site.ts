@@ -37,6 +37,11 @@ export const SITE = {
     /** 创始人（选填）：{ name, url, description }。 */
     founder: null as null | { name: string; url?: string; description?: string },
   },
+  /** 公开交流群入口。链接只用于读者主动加入，不参与后台鉴权。 */
+  community: {
+    feishuInviteUrl: "https://applink.feishu.cn/client/chat/chatter/add_by_link?link_token=236iceeb-7d4a-4ce3-ab86-937c4d61fa4f",
+    feishuName: "MyHOT AI 情报交流群",
+  },
   /** 抓取信源时报上的名字（User-Agent 里用），不要冒用别的站。 */
   crawlerName: "MyHOTBot",
 } as const;

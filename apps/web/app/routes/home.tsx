@@ -10,6 +10,7 @@ import { Timeline } from "../features/feed/Timeline";
 import { HotTopics } from "../features/feed/HotTopics";
 import { CategoryTabs, SearchField, SearchIconLink } from "../features/feed/Filters";
 import { beijingDate, beijingWeekday } from "../lib/format";
+import { SubscribePanel } from "../features/community/SubscribePanel";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
@@ -65,6 +66,8 @@ export default function Home() {
       </div>
 
       {data.hot && <HotTopics entries={data.hot} />}
+
+      <SubscribePanel />
 
       <h2 className="mt-6 text-[20px] font-bold text-ink lg:hidden">{filters.tag ? title : "最新精选"}</h2>
       <div className="-mx-4 mt-3 flex items-center gap-2 pl-4 pr-2 lg:hidden">
