@@ -112,7 +112,15 @@ export interface CodexResetPageData extends CodexResetsSnapshot {
   lastLanded: CodexResetEvent | null;
   /** Tibo's X avatar (proxied), when a post of his has been collected. */
   authorAvatar: string | null;
-  stats: { resets90: number; credits90: number; medianIntervalDays: number | null; lastResetDate: string | null };
+  stats: {
+    resets90: number;
+    credits90: number;
+    medianIntervalDays: number | null;
+    lastResetDate: string | null;
+    lastResetAt: string | null;
+    /** Historical estimate only; an announced reset always takes precedence on the page. */
+    nextResetEstimate: { date: string; from: string; through: string; sampleSize: number; intervalDays: number } | null;
+  };
   calendar: CodexCalendarMark[];
   /** Beijing minute of day (0–1439) of each source-confirmed direct reset, for the timing chart. */
   confirmMinutes: number[];

@@ -303,6 +303,28 @@ export async function codexResetPage(now = Date.now()): Promise<CodexResetPageDa
   const [author] = await sql<{ avatar: string | null }[]>`
     SELECT x_post->>'avatarUrl' AS avatar FROM articles
     WHERE source_id = 'x-account-thsottiaux' AND x_post ? 'avatarUrl' ORDER BY discovered_at DESC LIMIT 1`;
+  const confirmedResets = snap.events
+    .filter((e) => e.type === "direct_reset" && e.presentation?.status === "confirmed" && e.confirmedAt)
+    .sort((a, b) => Date.parse(b.confirmedAt!) - Date.parse(a.confirmedAt!));
+  const lastReset = confirmedResets[0] ?? null;
+  const lastResetAt = lastReset?.confirmedAt ?? null;
+  const confirmedDays = [...new Set(confirmedResets.map((e) => e.occurredOn ?? e.confirmedAt!.slice(0, 10)))].sort();
+  const confirmedIntervals = confirmedDays.slice(1).map((d, i) => Math.round((Date.parse(d) - Date.parse(confirmedDays[i]!)) / 86400_000));
+  const confirmedMedian = confirmedIntervals.length
+    ? [...confirmedIntervals].sort((a, b) => a - b).at(Math.floor(confirmedIntervals.length / 2))!
+    : null;
+  let nextResetEstimate: CodexResetPageData["stats"]["nextResetEstimate"] = null;
+  if (lastResetAt && confirmedMedian && confirmedMedian > 0) {
+    let date = addDays(lastResetAt.slice(0, 10), confirmedMedian);
+    while (date <= today) date = addDays(date, confirmedMedian);
+    nextResetEstimate = {
+      date,
+      from: `${date}T07:30:00+08:00`,
+      through: `${date}T12:30:00+08:00`,
+      sampleSize: confirmedIntervals.length + 1,
+      intervalDays: confirmedMedian,
+    };
+  }
   const lastLanded = snap.events.find((e) => e.presentation?.status === "confirmed" || e.presentation?.status === "likely_completed");
   return {
     ...snap,
@@ -313,7 +335,9 @@ export async function codexResetPage(now = Date.now()): Promise<CodexResetPageDa
       resets90: inWindow.filter((m) => m.type === "direct_reset").length,
       credits90: inWindow.filter((m) => m.type === "reset_credit").length,
       medianIntervalDays: median,
-      lastResetDate: resetDays.filter((d) => landed.some((m) => m.date === d && m.state === "confirmed")).at(-1) ?? null,
+      lastResetDate: lastResetAt?.slice(0, 10) ?? null,
+      lastResetAt,
+      nextResetEstimate,
     },
     calendar: marks,
     confirmMinutes: snap.events

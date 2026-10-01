@@ -87,9 +87,19 @@ function Hero({ d, now }: { d: CodexResetSitePage; now: number }) {
             当前没有等待生效的重置
           </p>
           <h2 className="mt-3 text-[20px] font-[650] leading-[1.25] text-ink sm:text-[24px]">
-            {d.stats.lastResetDate ? `上一次额度重置在 ${monthDay(d.stats.lastResetDate)}` : "暂无重置记录"}
+            {d.stats.nextResetEstimate
+              ? `下次重置预计在 ${monthDay(d.stats.nextResetEstimate.date)}`
+              : d.stats.lastResetDate ? `上一次额度重置在 ${monthDay(d.stats.lastResetDate)}` : "暂无重置记录"}
           </h2>
-          <p className="mt-2 text-[13px] leading-[1.75] text-ink-4">不预测尚未宣布的下一次重置。Tibo 一旦宣布，这里会显示预计生效时间与原帖。</p>
+          {d.stats.nextResetEstimate ? (
+            <>
+              <p className="num mt-4 text-[24px] font-[650] leading-[1.3] tracking-[-0.01em] text-ok-ink lg:text-[clamp(24px,2.6vw,32px)]">
+                {windowText(d.stats.nextResetEstimate.from, d.stats.nextResetEstimate.through, d.today).replace("–", " – ")}
+              </p>
+              <p className="mt-2 text-[13px] leading-[1.75] text-ink-4">历史推测：按最近 {d.stats.nextResetEstimate.sampleSize} 次已确认额度重置的中位间隔（{d.stats.nextResetEstimate.intervalDays} 天）估算；并非 OpenAI 公告。</p>
+            </>
+          ) : <p className="mt-2 text-[13px] leading-[1.75] text-ink-4">暂缺足够的已确认记录，无法推测下一次。Tibo 一旦宣布，这里会显示预计生效时间与原帖。</p>}
+          {d.stats.lastResetAt && <p className="mt-3 text-[13px] leading-[1.75] text-ink-3">最近一次实际额度重置：{monthDay(d.stats.lastResetAt.slice(0, 10))} {bjTime(d.stats.lastResetAt)}（北京时间）</p>}
           {d.outage && (
             <p className="mt-4 border-t border-line pt-4 text-[13px] leading-[1.75] text-ink-3">
               线索：{dayWord(bjDate(d.outage.publishedAt!), d.today)} {bjTime(d.outage.publishedAt!)} Tibo 确认 Codex 故障
@@ -148,6 +158,7 @@ function Hero({ d, now }: { d: CodexResetSitePage; now: number }) {
         )}
         <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-1.5 text-[13px] leading-[1.75] text-ink-3">
           <li>适用范围：{scopeText(e)}</li>
+          {d.stats.lastResetAt && <li>最近一次实际重置：{monthDay(d.stats.lastResetAt.slice(0, 10))} {bjTime(d.stats.lastResetAt)}（北京时间）</li>}
           {outage?.publishedAt && (
             <li>
               起因：{dayWord(bjDate(outage.publishedAt), d.today)} {bjTime(outage.publishedAt)} Tibo 确认 Codex 故障{outage.recoveredAt ? `，${bjTime(outage.recoveredAt)} 恢复` : ""}
@@ -231,7 +242,7 @@ export default function CodexResetPage() {
         ) : (
           <span>监控状态暂不可用</span>
         )}
-        <span>{SITE.name} 整理 · 非 OpenAI 官方页面</span>
+        <span><a className="text-accent hover:underline" href="https://whenreset.uk/" target="_blank" rel="noreferrer">参考 whenreset.uk ↗</a> · {SITE.name} 整理 · 非 OpenAI 官方页面</span>
       </footer>
     </div>
   );
