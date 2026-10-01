@@ -20,7 +20,19 @@ export interface CreatedKey {
   createdAt: string;
 }
 
+/** How many live keys one member may hold. Enough for every machine, few enough that a member cannot quietly grow the table without bound. */
+const MAX_ACTIVE_KEYS = 20;
+
+export class TooManyKeys extends Error {
+  constructor() {
+    super(`每个人最多只能有 ${MAX_ACTIVE_KEYS} 个密钥，先吊销一个再建。`);
+  }
+}
+
 export async function createKey(userId: string, label: string): Promise<CreatedKey> {
+  const [{ count }] = await sql<{ count: number }[]>`
+    SELECT count(*)::int AS count FROM community_api_keys WHERE user_id = ${userId} AND revoked_at IS NULL`;
+  if (count >= MAX_ACTIVE_KEYS) throw new TooManyKeys();
   const token = newKeyValue();
   const [row] = await sql<{ id: string; created_at: Date }[]>`
     INSERT INTO community_api_keys (id, user_id, key_hash, key_prefix, label)

@@ -6,7 +6,7 @@ import { feedbackSourceHash } from "@aihot/backend/operations/feedback";
 import {
   AccountRejected, COMMUNITY_SESSION_DAYS, clearSessionCookie, completeSignIn, endSession, sessionCookie, sessionUser, startSignIn,
 } from "@aihot/backend/community/auth";
-import { createKey, listKeys, revokeKey } from "@aihot/backend/community/keys";
+import { createKey, listKeys, revokeKey, TooManyKeys } from "@aihot/backend/community/keys";
 import { sendProblem } from "../http/respond.ts";
 
 const SECONDS = COMMUNITY_SESSION_DAYS * 86400;
@@ -91,8 +91,13 @@ export function registerCommunity(app: FastifyInstance) {
     if (!user) return;
     const body = (req.body ?? {}) as { label?: unknown };
     const label = String(body.label ?? "").trim() || "default";
-    const created = await createKey(user.id, label);
-    return reply.send({ id: created.id, token: created.token, prefix: created.prefix, label: created.label, createdAt: created.createdAt });
+    try {
+      const created = await createKey(user.id, label);
+      return reply.send({ id: created.id, token: created.token, prefix: created.prefix, label: created.label, createdAt: created.createdAt });
+    } catch (error) {
+      if (error instanceof TooManyKeys) return sendProblem(req, reply, { status: 409, code: "too_many_keys", detail: error.message });
+      throw error;
+    }
   });
 
   app.delete("/api/community/keys/:id", async (req, reply) => {

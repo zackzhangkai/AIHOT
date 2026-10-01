@@ -104,7 +104,7 @@ export async function startSignIn(input: StartSignInInput): Promise<{ purpose: "
     return { purpose, devLink: link };
   }
   try {
-    await sendAccountMail({ to: email, subject, text, html });
+    await sendAccountMail({ to: email, subject, text, html, idempotencyKey: `community-link-${token}` });
   } catch (error) {
     if (error instanceof MailUnavailable) throw new AccountRejected(503, "mail_unavailable", "邮件服务还没有配置好，请稍后再试。", 60);
     throw error;

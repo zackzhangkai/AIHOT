@@ -20,6 +20,8 @@ export interface AccountMail {
   subject: string;
   text: string;
   html: string;
+  /** One value per link, so asking for a new link sends a new message instead of being swallowed. */
+  idempotencyKey: string;
 }
 
 export async function sendAccountMail(message: AccountMail): Promise<void> {
@@ -34,13 +36,16 @@ export async function sendAccountMail(message: AccountMail): Promise<void> {
     text: message.text,
     html: message.html,
   };
+  // The relay (a Resend proxy on whenreset.uk) takes `to` as one address string and wants an
+  // explicit idempotency key; Resend's own API wants `to` as an array and a header instead.
   const response = await fetch(key ? "https://api.resend.com/emails" : relayUrl!, {
     method: "POST",
     headers: {
       authorization: `Bearer ${key ?? relayToken}`,
       "content-type": "application/json",
+      ...(key ? { "idempotency-key": message.idempotencyKey } : {}),
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(key ? payload : { ...payload, to: message.to, idempotencyKey: message.idempotencyKey }),
     signal: AbortSignal.timeout(15_000),
   });
   if (!response.ok) throw new Error(`Mail transport rejected the message (${response.status})`);

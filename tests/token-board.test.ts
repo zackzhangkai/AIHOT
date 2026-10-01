@@ -7,7 +7,8 @@ import { after, test } from "node:test";
 import { beijingDate } from "@aihot/contracts/time";
 import { closeDb, sql } from "@aihot/backend/db";
 import { newShortId } from "@aihot/backend/lib/ids";
-import { createKey, revokeKey, resolveKeyToken } from "@aihot/backend/community/keys";
+import { createKey, revokeKey, resolveKeyToken, TooManyKeys } from "@aihot/backend/community/keys";
+import { sendAccountMail } from "@aihot/backend/community/mail";
 import { ANONYMOUS_ROWS, UsageRejected, parseReport, recordUsage, tokenBoard, tokenHeatmap, tokenSummary } from "@aihot/backend/community/usage";
 
 const T = tag();
@@ -130,4 +131,44 @@ test("an API key is shown once, stored as a hash, and stops working when revoked
 
   assert.equal(await revokeKey(me, created.id), true);
   assert.equal(await resolveKeyToken(created.token), null, "a revoked key reports nothing");
+});
+
+test("a member cannot grow keys without bound, and revoking one frees the slot", async () => {
+  const me = await member(`kcap${T}`.slice(0, 31));
+  for (let i = 0; i < 20; i += 1) await createKey(me, `k${i}`);
+  await assert.rejects(createKey(me, "one too many"), (e: unknown) => e instanceof TooManyKeys);
+
+  // Revoking is what makes room: the count only ever looks at live keys.
+  const first = (await sql<{ id: string }[]>`SELECT id FROM community_api_keys WHERE user_id = ${me} AND revoked_at IS NULL LIMIT 1`)[0]!;
+  assert.equal(await revokeKey(me, first.id), true);
+  const again = await createKey(me, "after revoking");
+  assert.match(again.token, /^mh_live_/);
+});
+
+test("account mail goes out as one address string with an idempotency key, the shape the relay takes", async () => {
+  const originalFetch = globalThis.fetch;
+  const savedEnv = { from: process.env.MAIL_FROM, url: process.env.MAIL_RELAY_URL, token: process.env.MAIL_RELAY_TOKEN, key: process.env.RESEND_API_KEY };
+  let sent: { url: string; body: Record<string, unknown> } | null = null;
+  globalThis.fetch = (async (url: unknown, init: { body: string }) => {
+    sent = { url: String(url), body: JSON.parse(init.body) as Record<string, unknown> };
+    return new Response(JSON.stringify({ id: "relay-1" }), { status: 200 });
+  }) as typeof fetch;
+  process.env.MAIL_FROM = "MyHOT <daily@example.test>";
+  process.env.MAIL_RELAY_URL = "https://relay.example.test/send";
+  process.env.MAIL_RELAY_TOKEN = "t";
+  process.env.RESEND_API_KEY = "";
+  try {
+    await sendAccountMail({ to: "member@example.test", subject: "s", text: "t", html: "<p>h</p>", idempotencyKey: "community-link-abc" });
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env.MAIL_FROM = savedEnv.from;
+    process.env.MAIL_RELAY_URL = savedEnv.url;
+    process.env.MAIL_RELAY_TOKEN = savedEnv.token;
+    process.env.RESEND_API_KEY = savedEnv.key;
+  }
+
+  assert.equal(sent!.url, "https://relay.example.test/send", "without a Resend key the relay receives it");
+  assert.equal(sent!.body.to, "member@example.test", "the relay rejects an array of recipients");
+  assert.equal(sent!.body.idempotencyKey, "community-link-abc", "a second link must send a second message");
+  assert.equal(sent!.body.from, "MyHOT <daily@example.test>");
 });
