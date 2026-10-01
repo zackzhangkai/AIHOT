@@ -4,7 +4,6 @@ import { useLoaderData, useRevalidator } from "react-router";
 import type { CodexResetEvent, CodexResetSitePage, CodexResetDay } from "@aihot/contracts/monitor";
 import { loadOr404 } from "../lib/api.server";
 import { pageMeta } from "../lib/seo";
-import { PostCard } from "../features/monitor/PostCard";
 import { ResetCalendar } from "../features/monitor/ResetCalendar";
 import { bjDate, bjTime, dayWord, durationText, monthDay, stamp, typeName, windowText } from "../features/monitor/format";
 import { IconChevronDown, IconChevronRight } from "../components/icons";
@@ -76,30 +75,31 @@ function Hero({ d, now }: { d: CodexResetSitePage; now: number }) {
   const entrance = useEntrance();
   // Stacked like a status strip: announcement summary on top, the full post below across the
   // whole card (clamped), so neither column sits half-empty on wide screens.
-  const shell = "cr-wash rounded-sheet border border-line-strong p-4 sm:p-6 lg:p-8";
+  const shell = "reset-hero relative overflow-hidden rounded-sheet border border-line-strong p-5 sm:p-7 lg:p-9";
   if (!e) {
     const last = d.lastLanded;
     return (
       <section className={shell} style={{ "--tone": last ? "var(--ok-ink)" : "var(--ink-4)" } as React.CSSProperties}>
-        <div className="min-w-0">
+        <div className="relative z-[1] min-w-0">
+          <p className="reset-hero-kicker">NEXT RESET · 北京时间</p>
           <p className={`inline-flex items-center gap-2 text-[13px] font-medium ${last ? "text-ok-ink" : "text-ink-4"}`}>
             <span className="cr-dot" aria-hidden="true" />
             当前没有等待生效的重置
           </p>
-          <h2 className="mt-3 text-[20px] font-[650] leading-[1.25] text-ink sm:text-[24px]">
+          <h2 className="mt-2 text-[24px] font-[650] leading-[1.2] text-ink sm:text-[30px]">
             {d.stats.nextResetEstimate
               ? `下次重置预计在 ${monthDay(d.stats.nextResetEstimate.date)}`
               : d.stats.lastResetDate ? `上一次额度重置在 ${monthDay(d.stats.lastResetDate)}` : "暂无重置记录"}
           </h2>
           {d.stats.nextResetEstimate ? (
             <>
-              <p className="num mt-4 text-[24px] font-[650] leading-[1.3] tracking-[-0.01em] text-ok-ink lg:text-[clamp(24px,2.6vw,32px)]">
+              <p className="num mt-5 text-[34px] font-[700] leading-[1.05] tracking-[-0.03em] text-accent sm:text-[44px]">
                 {windowText(d.stats.nextResetEstimate.from, d.stats.nextResetEstimate.through, d.today).replace("–", " – ")}
               </p>
               <p className="mt-2 text-[13px] leading-[1.75] text-ink-4">历史推测：按最近 {d.stats.nextResetEstimate.sampleSize} 次已确认额度重置的中位间隔（{d.stats.nextResetEstimate.intervalDays} 天）估算；并非 OpenAI 公告。</p>
             </>
           ) : <p className="mt-2 text-[13px] leading-[1.75] text-ink-4">暂缺足够的已确认记录，无法推测下一次。Tibo 一旦宣布，这里会显示预计生效时间与原帖。</p>}
-          {d.stats.lastResetAt && <p className="mt-3 text-[13px] leading-[1.75] text-ink-3">最近一次实际额度重置：{monthDay(d.stats.lastResetAt.slice(0, 10))} {bjTime(d.stats.lastResetAt)}（北京时间）</p>}
+          {d.stats.lastResetAt && <p className="reset-hero-recent mt-5">最近一次实际重置 <strong>{monthDay(d.stats.lastResetAt.slice(0, 10))} {bjTime(d.stats.lastResetAt)}</strong></p>}
           {d.outage && (
             <p className="mt-4 border-t border-line pt-4 text-[13px] leading-[1.75] text-ink-3">
               线索：{dayWord(bjDate(d.outage.publishedAt!), d.today)} {bjTime(d.outage.publishedAt!)} Tibo 确认 Codex 故障
@@ -107,16 +107,7 @@ function Hero({ d, now }: { d: CodexResetSitePage; now: number }) {
             </p>
           )}
         </div>
-        {last?.posts[0] && (
-          <div className="mt-5 border-t border-line pt-5">
-            <PostCard
-              avatar={d.authorAvatar}
-              stage={`${last.posts[0].stage}原帖`}
-              clampLines={8}
-              post={{ id: last.posts[0].id, publishedAt: last.posts[0].publishedAt, translation: last.posts[0].fullText ?? last.posts[0].text, original: last.posts[0].fullOriginalText ?? last.posts[0].originalText, context: last.posts[0].context, url: last.posts[0].url }}
-            />
-          </div>
-        )}
+        <span className="reset-hero-orbit" aria-hidden="true">↻</span>
       </section>
     );
   }
@@ -139,20 +130,21 @@ function Hero({ d, now }: { d: CodexResetSitePage; now: number }) {
       className={`${shell} ${entrance ? "animate-fade-up" : ""}`}
       style={{ "--tone": status === "expired_unconfirmed" ? "var(--hot)" : "var(--amber-ink)" } as React.CSSProperties}
     >
-      <div className="min-w-0">
+      <div className="relative z-[1] min-w-0">
+        <p className="reset-hero-kicker">NEXT RESET · 北京时间</p>
         <p className={`inline-flex items-center gap-2 text-[13px] font-medium ${status === "expired_unconfirmed" ? "text-hot" : "text-amber-ink"}`}>
           <span className="cr-dot cr-dot-live" aria-hidden="true" />
           {typeName(e.type)} · Tibo 已宣布
         </p>
-        <h2 className="mt-3 text-[20px] font-[650] leading-[1.25] text-ink sm:text-[24px]">{headline}</h2>
+        <h2 className="mt-2 text-[24px] font-[650] leading-[1.2] text-ink sm:text-[30px]">{headline}</h2>
         {window?.from && (
-          <p className="num mt-4 text-[24px] font-[650] leading-[1.3] tracking-[-0.01em] text-amber-ink lg:text-[clamp(24px,2.6vw,32px)]">
+          <p className="num mt-5 text-[34px] font-[700] leading-[1.05] tracking-[-0.03em] text-accent sm:text-[44px]">
             预计 {windowText(window.from, window.through, d.today).replace("–", " – ")}
           </p>
         )}
         {!window?.from && historicalEstimate && (
           <>
-            <p className="num mt-4 text-[24px] font-[650] leading-[1.3] tracking-[-0.01em] text-amber-ink lg:text-[clamp(24px,2.6vw,32px)]">
+            <p className="num mt-5 text-[34px] font-[700] leading-[1.05] tracking-[-0.03em] text-accent sm:text-[44px]">
               历史预计 {windowText(historicalEstimate.from, historicalEstimate.through, d.today).replace("–", " – ")}
             </p>
             <p className="mt-2 text-[13px] leading-[1.75] text-ink-4">这条预告未给出具体时刻；候选窗口按最近 {historicalEstimate.sampleSize} 次已确认额度重置的中位间隔（{historicalEstimate.intervalDays} 天）估算，并非 OpenAI 公告。</p>
@@ -165,7 +157,7 @@ function Hero({ d, now }: { d: CodexResetSitePage; now: number }) {
             {e.estimate?.reason}
           </p>
         )}
-        <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-1.5 text-[13px] leading-[1.75] text-ink-3">
+        <ul className="reset-hero-meta mt-6 flex flex-wrap gap-x-6 gap-y-1.5 text-[13px] leading-[1.75] text-ink-3">
           <li>适用范围：{scopeText(e)}</li>
           {d.stats.lastResetAt && <li>最近一次实际重置：{monthDay(d.stats.lastResetAt.slice(0, 10))} {bjTime(d.stats.lastResetAt)}（北京时间）</li>}
           {outage?.publishedAt && (
@@ -178,16 +170,11 @@ function Hero({ d, now }: { d: CodexResetSitePage; now: number }) {
           {credit ? "重置卡到账后由你自己决定何时使用。卡片余额以 Codex 内显示为准。" : "剩余额度可以放心用，生效后会恢复满额。以你 Codex 里显示的用量为准。"}
         </p>
       </div>
-      {post && (
-        <div className="mt-5 border-t border-line pt-5">
-          <PostCard
-            avatar={d.authorAvatar}
-            stage={`${post.stage}原帖`}
-            clampLines={12}
-            post={{ id: post.id, publishedAt: post.publishedAt, translation: post.fullText ?? post.text, original: post.fullOriginalText ?? post.originalText, context: post.context, url: post.url }}
-          />
-        </div>
-      )}
+      <div className="reset-hero-signal relative z-[1] mt-6 flex flex-wrap items-center justify-between gap-3">
+        <span>最近公开信号：Tibo 已发布相关动态</span>
+        {post?.url && <a href={post.url} target="_blank" rel="noreferrer">查看原帖 ↗</a>}
+      </div>
+      <span className="reset-hero-orbit" aria-hidden="true">↻</span>
     </section>
   );
 }

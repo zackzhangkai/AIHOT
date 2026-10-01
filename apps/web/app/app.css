@@ -513,10 +513,31 @@
 :root:not([data-theme="dark"]) body:has(.report-shell) {
   background: var(--surface);
 }
-/* Reset monitor status card: a 135° wash of the state's tone (amber pending, green landed, rose alert). */
-.cr-wash {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--tone, var(--ink-4)) 7%, var(--surface)), var(--surface) 60%);
+/* Reset monitor: the time window is a compact dashboard rather than a long post card. */
+.reset-hero {
+  background: color-mix(in srgb, var(--accent-soft) 58%, var(--surface));
+  box-shadow: var(--shadow-card);
 }
+.reset-hero::before {
+  content: "";
+  position: absolute;
+  width: 21rem;
+  height: 21rem;
+  right: -8rem;
+  top: -10rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-radius: 9999px;
+  box-shadow: 0 0 0 2.75rem color-mix(in srgb, var(--accent) 5%, transparent), 0 0 0 5.5rem color-mix(in srgb, var(--accent) 3%, transparent);
+}
+.reset-hero-kicker { font: 700 10px/1 var(--font-mono); color: var(--accent); letter-spacing: .12em; }
+.reset-hero-recent { display: inline-flex; gap: .7rem; border-radius: var(--radius-control); background: var(--surface); border: 1px solid var(--line); padding: .55rem .75rem; font-size: 12px; color: var(--ink-3); }
+.reset-hero-recent strong { color: var(--ink); font-weight: 650; }
+.reset-hero-meta { border-top: 1px solid var(--line); padding-top: 1rem; }
+.reset-hero-signal { border-radius: var(--radius-card); background: var(--accent); color: var(--accent-contrast); padding: .9rem 1rem; font-size: 13px; }
+.reset-hero-signal a { border: 1px solid color-mix(in srgb, var(--accent-contrast) 38%, transparent); border-radius: var(--radius-control); padding: .35rem .55rem; font-size: 12px; font-weight: 600; }
+.reset-hero-signal a:hover { background: color-mix(in srgb, var(--accent-contrast) 12%, transparent); }
+.reset-hero-orbit { position: absolute; right: 2rem; top: 1rem; color: color-mix(in srgb, var(--accent) 32%, transparent); font-size: clamp(7rem, 16vw, 12rem); font-weight: 200; line-height: 1; transform: rotate(-18deg); }
+@media (max-width: 640px) { .reset-hero-orbit { right: -.35rem; top: 1.7rem; font-size: 7rem; } }
 /* The state dot carries a soft halo that breathes while something is pending. */
 .cr-dot {
   width: 8px;
