@@ -5,7 +5,7 @@ import type { CodexResetEvent, CodexResetSitePage, CodexResetDay } from "@aihot/
 import { loadOr404 } from "../lib/api.server";
 import { pageMeta } from "../lib/seo";
 import { ResetCalendar } from "../features/monitor/ResetCalendar";
-import { bjDate, bjTime, dayWord, durationText, monthDay, stamp, typeName, windowText } from "../features/monitor/format";
+import { bjTime, durationText, monthDay, stamp, typeName, windowText } from "../features/monitor/format";
 import { IconChevronDown, IconChevronRight } from "../components/icons";
 import { useEntrance } from "../lib/hydration";
 
@@ -69,110 +69,57 @@ function scopeText(e: CodexResetEvent) {
   return e.presentation?.productsZh ? `${who} · ${e.presentation.productsZh}` : who;
 }
 
-/** The status card: what Tibo announced and when it should land, beside his post. */
+/** The dashboard starts with the two things readers came for: forecast and last reset.
+ * Tibo's post remains a source, not the visual centre of the page. */
 function Hero({ d, now }: { d: CodexResetSitePage; now: number }) {
   const e = d.current;
   const entrance = useEntrance();
-  // Stacked like a status strip: announcement summary on top, the full post below across the
-  // whole card (clamped), so neither column sits half-empty on wide screens.
   const shell = "reset-hero relative overflow-hidden rounded-sheet border border-line-strong p-5 sm:p-7 lg:p-9";
-  if (!e) {
-    const last = d.lastLanded;
-    return (
-      <section className={shell} style={{ "--tone": last ? "var(--ok-ink)" : "var(--ink-4)" } as React.CSSProperties}>
-        <div className="relative z-[1] min-w-0">
-          <p className="reset-hero-kicker">NEXT RESET · 北京时间</p>
-          <p className={`inline-flex items-center gap-2 text-[13px] font-medium ${last ? "text-ok-ink" : "text-ink-4"}`}>
-            <span className="cr-dot" aria-hidden="true" />
-            当前没有等待生效的重置
-          </p>
-          <h2 className="mt-2 text-[24px] font-[650] leading-[1.2] text-ink sm:text-[30px]">
-            {d.stats.nextResetEstimate
-              ? `下次重置预计在 ${monthDay(d.stats.nextResetEstimate.date)}`
-              : d.stats.lastResetDate ? `上一次额度重置在 ${monthDay(d.stats.lastResetDate)}` : "暂无重置记录"}
-          </h2>
-          {d.stats.nextResetEstimate ? (
-            <>
-              <p className="num mt-5 text-[34px] font-[700] leading-[1.05] tracking-[-0.03em] text-accent sm:text-[44px]">
-                {windowText(d.stats.nextResetEstimate.from, d.stats.nextResetEstimate.through, d.today).replace("–", " – ")}
-              </p>
-              <p className="mt-2 text-[13px] leading-[1.75] text-ink-4">历史推测：按最近 {d.stats.nextResetEstimate.sampleSize} 次已确认额度重置的中位间隔（{d.stats.nextResetEstimate.intervalDays} 天）估算；并非 OpenAI 公告。</p>
-            </>
-          ) : <p className="mt-2 text-[13px] leading-[1.75] text-ink-4">暂缺足够的已确认记录，无法推测下一次。Tibo 一旦宣布，这里会显示预计生效时间与原帖。</p>}
-          {d.stats.lastResetAt && <p className="reset-hero-recent mt-5">最近一次实际重置 <strong>{monthDay(d.stats.lastResetAt.slice(0, 10))} {bjTime(d.stats.lastResetAt)}</strong></p>}
-          {d.outage && (
-            <p className="mt-4 border-t border-line pt-4 text-[13px] leading-[1.75] text-ink-3">
-              线索：{dayWord(bjDate(d.outage.publishedAt!), d.today)} {bjTime(d.outage.publishedAt!)} Tibo 确认 Codex 故障
-              {d.outage.recoveredAt ? `，${bjTime(d.outage.recoveredAt)} 恢复` : ""}。故障不等于重置。
-            </p>
-          )}
-        </div>
-        <span className="reset-hero-orbit" aria-hidden="true">↻</span>
-      </section>
-    );
-  }
-  const status = e.presentation?.status ?? "announced";
-  const window = e.estimate ?? e.schedule;
+  const status = e?.presentation?.status ?? "announced";
+  const window = e?.estimate ?? e?.schedule;
   const through = window?.through ? Date.parse(window.through) : null;
   const from = window?.from ? Date.parse(window.from) : null;
   const historicalEstimate = d.stats.nextResetEstimate;
-  const credit = e.type === "reset_credit";
-  const headline = status === "in_progress" ? (credit ? "重置卡正在发放" : "额度重置正在进行") : credit ? "等待重置卡到账" : "等待额度重置生效";
   let timing: string | null = null;
   if (status === "expired_unconfirmed" && through) timing = `已比预计晚 ${durationText(now - through)}，仍在等待确认`;
   else if (status === "announced" && from && now < from) timing = `距预计时段还有 ${durationText(from - now)}`;
   else if (status === "announced" && through && now < through) timing = "正处在预计时间段内";
-  else if (status === "in_progress" && e.presentation?.reportedAt) timing = `Tibo ${stamp(e.presentation.reportedAt)} 表示正在进行`;
-  const outage = d.outage && d.outage.resetEventId === e.id ? d.outage : null;
-  const post = e.posts[0];
+  else if (status === "in_progress" && e?.presentation?.reportedAt) timing = `Tibo ${stamp(e.presentation.reportedAt)} 表示正在进行`;
+  const forecastWindow = window?.from
+    ? { from: window.from, through: window.through, source: "announcement" as const }
+    : historicalEstimate
+      ? { from: historicalEstimate.from, through: historicalEstimate.through, source: "history" as const }
+      : null;
+  const post = e?.posts[0];
   return (
     <section
       className={`${shell} ${entrance ? "animate-fade-up" : ""}`}
-      style={{ "--tone": status === "expired_unconfirmed" ? "var(--hot)" : "var(--amber-ink)" } as React.CSSProperties}
+      style={{ "--tone": status === "expired_unconfirmed" ? "var(--hot)" : "var(--accent)" } as React.CSSProperties}
     >
       <div className="relative z-[1] min-w-0">
-        <p className="reset-hero-kicker">NEXT RESET · 北京时间</p>
-        <p className={`inline-flex items-center gap-2 text-[13px] font-medium ${status === "expired_unconfirmed" ? "text-hot" : "text-amber-ink"}`}>
-          <span className="cr-dot cr-dot-live" aria-hidden="true" />
-          {typeName(e.type)} · Tibo 已宣布
-        </p>
-        <h2 className="mt-2 text-[24px] font-[650] leading-[1.2] text-ink sm:text-[30px]">{headline}</h2>
-        {window?.from && (
-          <p className="num mt-5 text-[34px] font-[700] leading-[1.05] tracking-[-0.03em] text-accent sm:text-[44px]">
-            预计 {windowText(window.from, window.through, d.today).replace("–", " – ")}
-          </p>
-        )}
-        {!window?.from && historicalEstimate && (
-          <>
-            <p className="num mt-5 text-[34px] font-[700] leading-[1.05] tracking-[-0.03em] text-accent sm:text-[44px]">
-              历史预计 {windowText(historicalEstimate.from, historicalEstimate.through, d.today).replace("–", " – ")}
-            </p>
-            <p className="mt-2 text-[13px] leading-[1.75] text-ink-4">这条预告未给出具体时刻；候选窗口按最近 {historicalEstimate.sampleSize} 次已确认额度重置的中位间隔（{historicalEstimate.intervalDays} 天）估算，并非 OpenAI 公告。</p>
-          </>
-        )}
-        {(timing || e.estimate?.reason) && (
-          <p className="mt-2 text-[13px] leading-[1.75] text-ink-4">
-            {timing}
-            {timing && e.estimate?.reason ? " · " : ""}
-            {e.estimate?.reason}
-          </p>
-        )}
-        <ul className="reset-hero-meta mt-6 flex flex-wrap gap-x-6 gap-y-1.5 text-[13px] leading-[1.75] text-ink-3">
-          <li>适用范围：{scopeText(e)}</li>
-          {d.stats.lastResetAt && <li>最近一次实际重置：{monthDay(d.stats.lastResetAt.slice(0, 10))} {bjTime(d.stats.lastResetAt)}（北京时间）</li>}
-          {outage?.publishedAt && (
-            <li>
-              起因：{dayWord(bjDate(outage.publishedAt), d.today)} {bjTime(outage.publishedAt)} Tibo 确认 Codex 故障{outage.recoveredAt ? `，${bjTime(outage.recoveredAt)} 恢复` : ""}
-            </li>
-          )}
-        </ul>
-        <p className="mt-2 text-[13px] leading-[1.75] text-ink-3">
-          {credit ? "重置卡到账后由你自己决定何时使用。卡片余额以 Codex 内显示为准。" : "剩余额度可以放心用，生效后会恢复满额。以你 Codex 里显示的用量为准。"}
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="reset-hero-kicker">CODEX RESET RADAR · 北京时间</p>
+            <h2 className="mt-1 text-[25px] font-[650] leading-[1.2] text-ink sm:text-[32px]">下次额度重置预测</h2>
+          </div>
+          {e ? <span className={`inline-flex items-center gap-2 text-[12px] font-medium ${status === "expired_unconfirmed" ? "text-hot" : "text-amber-ink"}`}><span className="cr-dot cr-dot-live" aria-hidden="true" />{typeName(e.type)} · 公开信号已捕获</span> : <span className="inline-flex items-center gap-2 text-[12px] font-medium text-ok-ink"><span className="cr-dot" aria-hidden="true" />等待新的公开信号</span>}
+        </div>
+        <div className="mt-6 grid gap-4 md:grid-cols-[minmax(0,1.45fr)_minmax(220px,0.85fr)]">
+          <div className="rounded-panel border border-line bg-canvas p-5 sm:p-6">
+            <p className="text-[12px] font-medium text-ink-4">{forecastWindow?.source === "announcement" ? "已公告的预计窗口" : "基于历史记录的预测窗口"}</p>
+            {forecastWindow ? <p className="num mt-3 text-[30px] font-[700] leading-[1.12] tracking-[-0.03em] text-accent sm:text-[42px]">{windowText(forecastWindow.from, forecastWindow.through, d.today).replace("–", " – ")}</p> : <p className="mt-3 text-[22px] font-[650] leading-[1.35] text-ink">样本不足，暂不编造预测</p>}
+            <p className="mt-3 text-[13px] leading-[1.75] text-ink-4">{forecastWindow?.source === "announcement" ? (timing ?? "按公开公告持续跟踪中") : historicalEstimate ? `最近 ${historicalEstimate.sampleSize} 次已确认重置的中位间隔为 ${historicalEstimate.intervalDays} 天；这是历史推测，不是 OpenAI 公告。` : "有明确的公开信息后会显示预计窗口。"}</p>
+          </div>
+          <div className="rounded-panel border border-line bg-surface p-5 sm:p-6">
+            <p className="text-[12px] font-medium text-ink-4">最近一次实际重置</p>
+            {d.stats.lastResetAt ? <><p className="num mt-3 text-[25px] font-[700] leading-[1.2] text-ink sm:text-[30px]">{monthDay(d.stats.lastResetAt.slice(0, 10))}</p><p className="mt-1 text-[14px] text-ink-3">{bjTime(d.stats.lastResetAt)} · 北京时间</p></> : <p className="mt-3 text-[18px] font-[600] text-ink">暂无已确认记录</p>}
+            <p className="mt-4 text-[12px] leading-[1.7] text-ink-4">确认帖时间不一定等于你的实际到账时间，请以 Codex 内显示为准。</p>
+          </div>
+        </div>
       </div>
-      <div className="reset-hero-signal relative z-[1] mt-6 flex flex-wrap items-center justify-between gap-3">
-        <span>最近公开信号：Tibo 已发布相关动态</span>
-        {post?.url && <a href={post.url} target="_blank" rel="noreferrer">查看原帖 ↗</a>}
+      <div className="reset-hero-signal relative z-[1] mt-4 flex flex-wrap items-center justify-between gap-3">
+        <span>{e ? `当前动态：${scopeText(e)}` : "持续跟踪公开动态；没有公告不代表一定不会重置。"}</span>
+        {post?.url && <a href={post.url} target="_blank" rel="noreferrer">查看 Tibo 原帖 ↗</a>}
       </div>
       <span className="reset-hero-orbit" aria-hidden="true">↻</span>
     </section>
