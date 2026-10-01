@@ -29,6 +29,14 @@ export function fullDateTime(iso: string): string {
   return `${beijingDate(iso)} ${beijingTime(iso)}`;
 }
 
+/** Query string for the api's optional filters. Client-safe: loaders and browser fetches both use it. */
+export function queryString(params: Record<string, string | number | null | undefined>): string {
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) if (v !== null && v !== undefined && v !== "") sp.set(k, String(v));
+  const s = sp.toString();
+  return s ? `?${s}` : "";
+}
+
 /** "9月24日 10:51" (Beijing), for lists that span days. */
 export function monthDayTime(iso: string): string {
   const [, m, d] = beijingDate(iso).split("-").map(Number) as [number, number, number];

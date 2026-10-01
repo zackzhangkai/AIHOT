@@ -29,6 +29,7 @@ const MACHINE: Array<[path: string, type: RegExp]> = [
 const LEADERBOARD = FEATURES.leaderboard ? ["/leaderboard", "/leaderboard/rules", "/leaderboard/sources"] : [];
 PAGES.push(...LEADERBOARD);
 if (FEATURES.codexResetMonitor) PAGES.push("/codex-reset");
+if (FEATURES.tokenBoard) PAGES.push("/token", "/join");
 
 let failed = 0;
 async function check(path: string, expect: (res: Response, body: string) => string | null) {

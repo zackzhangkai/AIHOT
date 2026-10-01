@@ -21,6 +21,8 @@ export const V1_CACHE_CONTROL = {
   dailyByDate: "public, max-age=300, s-maxage=300, stale-while-revalidate=3600",
   selectedSnapshot: "public, max-age=300, s-maxage=300, stale-while-revalidate=900",
   selectedChanges: "public, max-age=60, s-maxage=60, stale-while-revalidate=60",
+  tokenBoard: "public, max-age=60, s-maxage=60, stale-while-revalidate=300",
+  tokenHeatmap: "public, max-age=300, s-maxage=300, stale-while-revalidate=900",
 } as const;
 
 export const RSS_CACHE_CONTROL = "public, max-age=300, s-maxage=300, stale-while-revalidate=900";

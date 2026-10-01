@@ -50,12 +50,9 @@ export async function loadOr404<T>(path: string, opts: { busyRedirect?: string; 
   }
 }
 
-export function queryString(params: Record<string, string | number | null | undefined>): string {
-  const sp = new URLSearchParams();
-  for (const [k, v] of Object.entries(params)) if (v !== null && v !== undefined && v !== "") sp.set(k, String(v));
-  const s = sp.toString();
-  return s ? `?${s}` : "";
-}
+// Lives in lib/format.ts so client code (a browser fetch in a route component) can build the same
+// query string a loader does without pulling this server-only module into the browser bundle.
+export { queryString } from "./format.ts";
 
 /**
  * Cache headers for a page of selected items: shared caches keep it at most `maxSeconds`, and never

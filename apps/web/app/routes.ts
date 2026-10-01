@@ -28,6 +28,8 @@ export default [
   route("feedback", "routes/feedback.tsx"),
   route("more", "routes/more.tsx"),
   route("starred", "routes/starred.tsx"),
+  route("token", "routes/token.tsx"),
+  route("join", "routes/join.tsx"),
   route("agent", "routes/agent.tsx"),
   route("codex-reset", "routes/codex-reset.tsx"),
   route("codex-reset/history/:date", "routes/codex-reset.tsx", { id: "codex-reset-day" }),

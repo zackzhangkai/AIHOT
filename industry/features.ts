@@ -8,4 +8,6 @@ export const FEATURES = {
   codexResetMonitor: true,
   /** Externally generated market reports.  The web process never runs a model for these. */
   research: true,
+  /** Token 热力图：社区成员上报每天的 token 消耗（/token、/join）。关掉后页面与接口都返回 404。 */
+  tokenBoard: true,
 } as const;

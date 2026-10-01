@@ -10,6 +10,9 @@ export const MCP_TOOL_NAMES = {
   hot: `${p}_get_hot_topics`,
   story: `${p}_get_story`,
   daily: `${p}_get_daily`,
+  /** Self-reported token usage. Read-only: reporting needs an API key and is not exposed here. */
+  tokenBoard: `${p}_get_token_board`,
+  tokenHeatmap: `${p}_get_token_heatmap`,
 } as const;
 
 export const MCP_TOOLS = Object.values(MCP_TOOL_NAMES).map((name) => ({ name }));

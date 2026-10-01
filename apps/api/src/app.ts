@@ -15,6 +15,8 @@ import { registerMedia } from "./routes/media.ts";
 import { registerFeeds } from "./routes/feeds.ts";
 import { registerStatic } from "./routes/static.ts";
 import { registerMcp } from "./routes/mcp.ts";
+import { registerCommunity } from "./routes/community.ts";
+import { registerUsage } from "./routes/usage.ts";
 import { sendProblem } from "./http/respond.ts";
 
 export async function buildApp(): Promise<FastifyInstance> {
@@ -78,6 +80,10 @@ export async function buildApp(): Promise<FastifyInstance> {
   registerFeeds(app);
   registerStatic(app);
   registerMcp(app);
+  if (FEATURES.tokenBoard) {
+    registerCommunity(app);
+    registerUsage(app);
+  }
   registerV1Fallbacks(app);
 
   app.setNotFoundHandler((req, reply) => {

@@ -274,6 +274,32 @@ export default function AgentPage() {
         {tab === "rss" && <RssTab base={base} />}
         {tab === "api" && <ApiTab base={base} />}
       </div>
+
+      {FEATURES.tokenBoard && (
+        <section className="mt-10 rounded-card border border-line bg-surface p-5">
+          <h3 className="text-[16px] font-bold text-ink">上报你的 token 消耗（唯一需要密钥的接口）</h3>
+          <p className="mt-2 text-[13.5px] leading-[1.85] text-ink-2">
+            上面三条都是匿名只读。想把自己的用量报上榜单，先 <Link to="/join" className="text-accent hover:underline">注册</Link> 拿一个 API Key，然后发一个 POST：
+          </p>
+          <pre className="mt-3 overflow-x-auto rounded-tile bg-bg-sunk p-3.5 text-[12px] leading-[1.7] text-ink-2 mono dark:bg-bg-muted/60">{`POST ${base}/api/v1/usage
+Authorization: Bearer mh_live_…
+
+{"day":"2026-10-01","tool":"claude-code","tokensIn":1200000,"tokensOut":85000,
+ "idempotencyKey":"2026-10-01-claude-code"}`}</pre>
+          <p className="mt-3 text-[13px] leading-[1.85] text-ink-3">
+            <Mono>day</Mono> 只能是今天或过去 6 天；同一个 <Mono>idempotencyKey</Mono> 重复上报会覆盖而不是叠加；每分钟最多 60 次。榜单与热力图见 <Link to="/token" className="text-accent hover:underline">Token 热力图</Link>，读取同样是匿名的。
+          </p>
+          <p className="mt-3 text-[13px] leading-[1.85] text-ink-2">
+            不想自己解析日志，仓库里有个零依赖脚本：它读 <Mono>~/.claude/projects/**/*.jsonl</Mono> 和 <Mono>~/.codex/sessions/**/*.jsonl</Mono> 里的用量计数，算完当天总量直接上报，挂 cron 或 hook 都行。
+          </p>
+          <pre className="mt-3 overflow-x-auto rounded-tile bg-bg-sunk p-3.5 text-[12px] leading-[1.7] text-ink-2 mono dark:bg-bg-muted/60">{`export MYHOT_TOKEN_KEY=mh_live_…
+node scripts/myhot-report.ts            # 两个工具都扫，上报今天
+node scripts/myhot-report.ts --tool codex --dry-run`}</pre>
+          <p className="mt-3 text-[13px] leading-[1.85] text-ink-3">
+            脚本只读 token 数字，不读也不传 prompt、回复内容和文件名。幂等键是 <Mono>&lt;tool&gt;:&lt;day&gt;</Mono>，一天跑多少次都是覆盖当天那一格，不会叠加。
+          </p>
+        </section>
+      )}
     </ReadingLayout>
   );
 }
