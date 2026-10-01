@@ -6,4 +6,6 @@ export const FEATURES = {
   leaderboard: true,
   /** Codex 重置监控：盯 OpenAI Codex 负责人在 X 上的额度重置公告（/codex-reset）。需要 SocialData。 */
   codexResetMonitor: true,
+  /** Externally generated market reports.  The web process never runs a model for these. */
+  research: true,
 } as const;

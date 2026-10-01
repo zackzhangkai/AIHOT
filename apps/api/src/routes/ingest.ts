@@ -4,6 +4,7 @@ import { timingSafeEqual } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { credential } from "@aihot/backend/config";
 import { IngestError, ingestItems } from "@aihot/backend/ingest/items";
+import { ResearchIngestError, storeResearchReport } from "@aihot/backend/research/read";
 
 
 const PLACEHOLDER = /^(|changeme|change-me|placeholder|xxx+|todo|test|dev|your[-_]?token.*)$/i;
@@ -42,6 +43,21 @@ export function registerIngest(app: FastifyInstance) {
     } catch (error) {
       if (error instanceof IngestError) return reply.code(error.status).send({ ok: false, error: error.message });
       req.log.error({ err: error }, "ingest items failed");
+      return reply.code(500).send({ ok: false, error: "internal error" });
+    }
+  });
+
+  // Reports are generated outside the web process; the same ingest token keeps
+  // this write path private without requiring an admin browser session.
+  app.post("/api/ingest/research", async (req, reply) => {
+    reply.header("Cache-Control", "no-store");
+    if (!authorized(req)) return unauthorized(reply);
+    if (limited(`research:${req.ip}`, 10)) return reply.code(429).header("Retry-After", "60").send({ ok: false, error: "rate limited" });
+    try {
+      return reply.send({ ok: true, ...(await storeResearchReport((req.body ?? {}) as never)) });
+    } catch (error) {
+      if (error instanceof ResearchIngestError) return reply.code(error.status).send({ ok: false, error: error.message });
+      req.log.error({ err: error }, "ingest research failed");
       return reply.code(500).send({ ok: false, error: "internal error" });
     }
   });
