@@ -35,7 +35,7 @@ export const SITE = {
   organization: {
     name: "MyHOT",
     /** 创始人（选填）：{ name, url, description }。 */
-    founder: { name: "张凯", description: "独立开发者，MyHOT 创始人" } as null | { name: string; url?: string; description?: string },
+    founder: { name: "Zack", url: "https://x.com/kaiz_amm", description: "独立开发者，MyHOT 创始人" } as null | { name: string; url?: string; description?: string },
   },
   /** 公开交流群入口。链接只用于读者主动加入，不参与后台鉴权。 */
   community: {
@@ -66,10 +66,11 @@ export const ABOUT = {
    * 二维码在后台“设置”里上传，或者放进 industry/brand/contact/；没有二维码就不显示那张卡片。
    */
   maker: {
-    name: "张凯",
+    name: "Zack",
     greeting: [
-      "我是张凯，一名独立开发者。",
+      "我是 Zack，一名独立开发者。",
       "我喜欢把杂乱的信息流整理成真正有用的工具。MyHOT 从收集到摘要、归并到日报，希望让你更快看见重要的 AI 动态。",
+      "联系我：个人微信 zack6116；微信公众号「Zack说AI」；X @kaiz_amm。",
     ],
   } as null | {
     name: string;
