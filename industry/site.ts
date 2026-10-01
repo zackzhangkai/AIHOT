@@ -26,7 +26,7 @@ export const SITE = {
    */
   mcpPrefix: "myhot",
   /** 对外联系邮箱（选填）：使用规则、llms.txt、响应头里会写。 */
-  contactEmail: null as string | null,
+  contactEmail: "zhangkaiamm@gmail.com" as string | null,
   /** 页脚的一行小字（选填）。 */
   footerNote: "由 AIHOT 开源框架驱动",
   /** 中国大陆网站的 ICP 备案号（选填），填了就显示在页脚并链接到工信部备案系统。 */
@@ -35,7 +35,7 @@ export const SITE = {
   organization: {
     name: "MyHOT",
     /** 创始人（选填）：{ name, url, description }。 */
-    founder: null as null | { name: string; url?: string; description?: string },
+    founder: { name: "张凯", description: "独立开发者，MyHOT 创始人" } as null | { name: string; url?: string; description?: string },
   },
   /** 公开交流群入口。链接只用于读者主动加入，不参与后台鉴权。 */
   community: {
@@ -65,7 +65,13 @@ export const ABOUT = {
    * avatarSourceId：一个 X 账号信源的 id，头像取它的（选填）。
    * 二维码在后台“设置”里上传，或者放进 industry/brand/contact/；没有二维码就不显示那张卡片。
    */
-  maker: null as null | {
+  maker: {
+    name: "张凯",
+    greeting: [
+      "我是张凯，一名独立开发者。",
+      "我喜欢把杂乱的信息流整理成真正有用的工具。MyHOT 从收集到摘要、归并到日报，希望让你更快看见重要的 AI 动态。",
+    ],
+  } as null | {
     name: string;
     greeting: string[];
     avatarSourceId?: string | null;

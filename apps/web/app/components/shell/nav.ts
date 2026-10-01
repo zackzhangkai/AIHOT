@@ -46,7 +46,6 @@ export const SIDEBAR: Array<{ title: string; items: NavItem[] }> = [
     items: [
       { to: "/agent", label: "Agent 接入", icon: IconPlug },
       { to: "/about", label: "关于", icon: IconHeart },
-      { to: "/changelog", label: "更新日志", icon: IconHistory, changelog: true },
       { to: "/feedback", label: "反馈", icon: IconMessage },
     ],
   },
@@ -56,7 +55,7 @@ export const TABBAR: NavItem[] = [
   { to: "/", label: "精选", icon: IconBolt, end: true },
   { to: "/all", label: "全部", icon: IconList },
   { to: "/daily", label: "日报", icon: IconDoc },
-  { to: "/more", label: "更多", icon: IconApps, changelog: true },
+  { to: "/more", label: "更多", icon: IconApps },
 ];
 
 /** Pages reached from the mobile "更多" tab keep that tab highlighted. */

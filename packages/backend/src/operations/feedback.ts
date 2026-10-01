@@ -4,6 +4,7 @@
 import { createHmac } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { SITE } from "@aihot/industry/site";
 import { config, credential } from "../config.ts";
 import { sql } from "../db.ts";
 import { sha256 } from "../lib/ids.ts";
@@ -46,6 +47,44 @@ export interface FeedbackInput {
   userAgent: string;
 }
 
+const escapeHtml = (value: string) => value.replace(/[&<>\"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '\"': "&quot;", "'": "&#39;" })[ch]!);
+
+function feedbackEmailConfigured(): boolean {
+  return Boolean(SITE.contactEmail && credential("integrations", "MAIL_FROM") && credential("integrations", "MAIL_RELAY_URL") && credential("integrations", "MAIL_RELAY_TOKEN"));
+}
+
+async function forwardFeedbackToEmail(id: number): Promise<"sent" | "skipped"> {
+  if (!feedbackEmailConfigured()) return "skipped";
+  const [feedback] = await sql<{ content: string; email: string | null; page_url: string | null; email_forwarded_at: Date | null }[]>`
+    SELECT content, email, page_url, email_forwarded_at FROM feedback WHERE id = ${id}`;
+  if (!feedback || feedback.email_forwarded_at) return "skipped";
+  const replyTo = feedback.email || "未填写";
+  const page = feedback.page_url || "未提供";
+  const text = `来自 ${SITE.name} 的新反馈 #${id}\n\n${feedback.content}\n\n联系邮箱：${replyTo}\n页面：${page}`;
+  try {
+    const response = await fetch(credential("integrations", "MAIL_RELAY_URL")!, {
+      method: "POST",
+      headers: { authorization: `Bearer ${credential("integrations", "MAIL_RELAY_TOKEN")}`, "content-type": "application/json" },
+      body: JSON.stringify({
+        from: credential("integrations", "MAIL_FROM"),
+        to: SITE.contactEmail,
+        subject: `[${SITE.name}] 新反馈 #${id}`,
+        text,
+        html: `<div style="font-family:system-ui,-apple-system,sans-serif;line-height:1.7"><h1 style="font-size:20px">${escapeHtml(SITE.name)} 新反馈 #${id}</h1><p style="white-space:pre-wrap">${escapeHtml(feedback.content)}</p><hr><p><strong>联系邮箱：</strong>${escapeHtml(replyTo)}<br><strong>页面：</strong>${escapeHtml(page)}</p></div>`,
+        idempotencyKey: `feedback-${id}`,
+      }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!response.ok) throw new Error(`mail relay rejected email (${response.status})`);
+    await sql`UPDATE feedback SET email_forwarded_at = now(), email_forward_error = NULL WHERE id = ${id}`;
+    return "sent";
+  } catch (error) {
+    const message = error instanceof Error ? error.message.slice(0, 400) : "mail forwarding failed";
+    await sql`UPDATE feedback SET email_forward_error = ${message} WHERE id = ${id}`;
+    throw error;
+  }
+}
+
 export async function submitFeedback(input: FeedbackInput): Promise<{ id: number }> {
   const content = input.content.trim();
   if (content.length < 2) throw new FeedbackRejected(400, "invalid_request", "请写下反馈内容。");
@@ -70,10 +109,11 @@ export async function submitFeedback(input: FeedbackInput): Promise<{ id: number
     screenshotKey = `local:${name}`;
   }
   const [row] = await sql<{ id: number }[]>`
-    INSERT INTO feedback (content, email, page_url, screenshot_key, source_hash, forward_error)
-    VALUES (${content}, ${email}, ${pageUrl}, ${screenshotKey}, ${source}, 'pending') RETURNING id`;
+    INSERT INTO feedback (content, email, page_url, screenshot_key, source_hash, forward_error, email_forward_error)
+    VALUES (${content}, ${email}, ${pageUrl}, ${screenshotKey}, ${source}, 'pending', 'pending') RETURNING id`;
   const id = row!.id;
   void forwardFeedbackToFeishu(id).catch(() => {});
+  void forwardFeedbackToEmail(id).catch(() => {});
   return { id };
 }
 
@@ -82,18 +122,32 @@ export async function submitFeedback(input: FeedbackInput): Promise<{ id: number
  * failing) is tried again for a week. Newer than a few minutes is still being sent by its submission.
  */
 export async function forwardPendingFeedback(): Promise<{ sent: number; failed: number }> {
-  if (!feishuInternalEnabled()) return { sent: 0, failed: 0 };
-  const rows = await sql<{ id: number }[]>`
-    SELECT id FROM feedback WHERE forwarded_at IS NULL AND forward_error IS NOT NULL
-      AND created_at < now() - interval '5 minutes' AND created_at > now() - interval '7 days'
-    ORDER BY id LIMIT 20`;
   let sent = 0;
   let failed = 0;
-  for (const r of rows) {
-    try {
-      if ((await forwardFeedbackToFeishu(r.id)) === "sent") sent += 1;
-    } catch {
-      failed += 1;
+  if (feishuInternalEnabled()) {
+    const rows = await sql<{ id: number }[]>`
+      SELECT id FROM feedback WHERE forwarded_at IS NULL AND forward_error IS NOT NULL
+        AND created_at < now() - interval '5 minutes' AND created_at > now() - interval '7 days'
+      ORDER BY id LIMIT 20`;
+    for (const r of rows) {
+      try {
+        if ((await forwardFeedbackToFeishu(r.id)) === "sent") sent += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+  }
+  if (feedbackEmailConfigured()) {
+    const rows = await sql<{ id: number }[]>`
+      SELECT id FROM feedback WHERE email_forwarded_at IS NULL AND email_forward_error IS NOT NULL
+        AND created_at < now() - interval '5 minutes' AND created_at > now() - interval '7 days'
+      ORDER BY id LIMIT 20`;
+    for (const r of rows) {
+      try {
+        if ((await forwardFeedbackToEmail(r.id)) === "sent") sent += 1;
+      } catch {
+        failed += 1;
+      }
     }
   }
   return { sent, failed };
