@@ -124,6 +124,7 @@ function Hero({ d, now }: { d: CodexResetSitePage; now: number }) {
   const window = e.estimate ?? e.schedule;
   const through = window?.through ? Date.parse(window.through) : null;
   const from = window?.from ? Date.parse(window.from) : null;
+  const historicalEstimate = d.stats.nextResetEstimate;
   const credit = e.type === "reset_credit";
   const headline = status === "in_progress" ? (credit ? "重置卡正在发放" : "额度重置正在进行") : credit ? "等待重置卡到账" : "等待额度重置生效";
   let timing: string | null = null;
@@ -148,6 +149,14 @@ function Hero({ d, now }: { d: CodexResetSitePage; now: number }) {
           <p className="num mt-4 text-[24px] font-[650] leading-[1.3] tracking-[-0.01em] text-amber-ink lg:text-[clamp(24px,2.6vw,32px)]">
             预计 {windowText(window.from, window.through, d.today).replace("–", " – ")}
           </p>
+        )}
+        {!window?.from && historicalEstimate && (
+          <>
+            <p className="num mt-4 text-[24px] font-[650] leading-[1.3] tracking-[-0.01em] text-amber-ink lg:text-[clamp(24px,2.6vw,32px)]">
+              历史预计 {windowText(historicalEstimate.from, historicalEstimate.through, d.today).replace("–", " – ")}
+            </p>
+            <p className="mt-2 text-[13px] leading-[1.75] text-ink-4">这条预告未给出具体时刻；候选窗口按最近 {historicalEstimate.sampleSize} 次已确认额度重置的中位间隔（{historicalEstimate.intervalDays} 天）估算，并非 OpenAI 公告。</p>
+          </>
         )}
         {(timing || e.estimate?.reason) && (
           <p className="mt-2 text-[13px] leading-[1.75] text-ink-4">
