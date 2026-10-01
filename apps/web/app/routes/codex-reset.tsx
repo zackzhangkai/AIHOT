@@ -79,6 +79,7 @@ function Hero({ d, now }: { d: CodexResetSitePage; now: number }) {
   const window = e?.estimate ?? e?.schedule;
   const through = window?.through ? Date.parse(window.through) : null;
   const from = window?.from ? Date.parse(window.from) : null;
+  const radarForecast = d.forecast;
   const historicalEstimate = d.stats.nextResetEstimate;
   let timing: string | null = null;
   if (status === "expired_unconfirmed" && through) timing = `已比预计晚 ${durationText(now - through)}，仍在等待确认`;
@@ -87,9 +88,11 @@ function Hero({ d, now }: { d: CodexResetSitePage; now: number }) {
   else if (status === "in_progress" && e?.presentation?.reportedAt) timing = `Tibo ${stamp(e.presentation.reportedAt)} 表示正在进行`;
   const forecastWindow = window?.from
     ? { from: window.from, through: window.through, source: "announcement" as const }
-    : historicalEstimate
-      ? { from: historicalEstimate.from, through: historicalEstimate.through, source: "history" as const }
-      : null;
+    : radarForecast
+      ? { from: radarForecast.targetAt, through: null, source: "whenreset" as const }
+      : historicalEstimate
+        ? { from: historicalEstimate.from, through: historicalEstimate.through, source: "history" as const }
+        : null;
   const post = e?.posts[0];
   return (
     <section
@@ -106,9 +109,9 @@ function Hero({ d, now }: { d: CodexResetSitePage; now: number }) {
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-[minmax(0,1.45fr)_minmax(220px,0.85fr)]">
           <div className="rounded-panel border border-line bg-canvas p-5 sm:p-6">
-            <p className="text-[12px] font-medium text-ink-4">{forecastWindow?.source === "announcement" ? "已公告的预计窗口" : "基于历史记录的预测窗口"}</p>
+            <p className="text-[12px] font-medium text-ink-4">{forecastWindow?.source === "announcement" ? "已公告的预计窗口" : forecastWindow?.source === "whenreset" ? "同步 whenreset.uk 的预测" : "基于历史记录的预测窗口"}</p>
             {forecastWindow ? <p className="num mt-3 text-[30px] font-[700] leading-[1.12] tracking-[-0.03em] text-accent sm:text-[42px]">{windowText(forecastWindow.from, forecastWindow.through, d.today).replace("–", " – ")}</p> : <p className="mt-3 text-[22px] font-[650] leading-[1.35] text-ink">样本不足，暂不编造预测</p>}
-            <p className="mt-3 text-[13px] leading-[1.75] text-ink-4">{forecastWindow?.source === "announcement" ? (timing ?? "按公开公告持续跟踪中") : historicalEstimate ? `最近 ${historicalEstimate.sampleSize} 次已确认重置的中位间隔为 ${historicalEstimate.intervalDays} 天；这是历史推测，不是 OpenAI 公告。` : "有明确的公开信息后会显示预计窗口。"}</p>
+            <p className="mt-3 text-[13px] leading-[1.75] text-ink-4">{forecastWindow?.source === "announcement" ? (timing ?? "按公开公告持续跟踪中") : forecastWindow?.source === "whenreset" && radarForecast ? `与 whenreset.uk 使用同一份公开雷达计算：${radarForecast.basisCount} 条确认动态、${radarForecast.sampleCount} 个间隔样本，锚定${radarForecast.anchoredLabel}。这不是 OpenAI 公告。` : historicalEstimate ? `最近 ${historicalEstimate.sampleSize} 次已确认重置的中位间隔为 ${historicalEstimate.intervalDays} 天；这是历史推测，不是 OpenAI 公告。` : "有明确的公开信息后会显示预计窗口。"}</p>
           </div>
           <div className="rounded-panel border border-line bg-surface p-5 sm:p-6">
             <p className="text-[12px] font-medium text-ink-4">最近一次实际重置</p>
