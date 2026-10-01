@@ -5,6 +5,7 @@ import { addDays, beijingDate, beijingMidnight } from "@aihot/contracts/time";
 import type { CodexCalendarMark, CodexResetMonitor, CodexResetPageData, CodexResetsSnapshot } from "@aihot/contracts/monitor";
 import { sql } from "../db.ts";
 import { remoteSnapshot, remoteVersion } from "./remote.ts";
+import { codexForecast } from "./forecast.ts";
 import { sha256, stableJson } from "../lib/ids.ts";
 import { proxiedImage } from "../media/imgproxy.ts";
 import { siteUrl } from "../publication/links.ts";
@@ -330,6 +331,7 @@ export async function codexResetPage(now = Date.now()): Promise<CodexResetPageDa
     ...snap,
     current: pending ?? null,
     lastLanded: lastLanded ?? null,
+    forecast: codexForecast(snap.events, now),
     authorAvatar: author?.avatar ? proxiedImage(author.avatar, "avatar") : null,
     stats: {
       resets90: inWindow.filter((m) => m.type === "direct_reset").length,

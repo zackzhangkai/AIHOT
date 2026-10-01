@@ -107,11 +107,29 @@ export interface CodexCalendarMark {
   label: string;
 }
 
+/** whenreset-style estimate for the next reset / credit drop, from historical intervals. */
+export interface CodexResetForecast {
+  /** "announced" = an explicit announced window in the future; "history" = interval quantiles. */
+  mode: "announced" | "history";
+  label: string;
+  /** Earliest plausible moment (25% quantile), Beijing ISO. */
+  targetAt: string;
+  /** Confirmed reset / credit-drop occurrences backing the model. */
+  basisCount: number;
+  /** Historical interval samples. */
+  sampleCount: number;
+  /** The latest reset / credit activity the estimate is anchored to. */
+  anchoredAt: string;
+  anchoredLabel: string;
+}
+
 export interface CodexResetPageData extends CodexResetsSnapshot {
   current: CodexResetEvent | null;
   lastLanded: CodexResetEvent | null;
   /** Tibo's X avatar (proxied), when a post of his has been collected. */
   authorAvatar: string | null;
+  /** Next-reset estimate shown as a strip under the hero; null when samples are insufficient. */
+  forecast: CodexResetForecast | null;
   stats: {
     resets90: number;
     credits90: number;
